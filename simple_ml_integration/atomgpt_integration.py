@@ -57,21 +57,15 @@ def execute_tool(tool_name: str, tool_args: dict):
         return {"status": "error", "message": str(e)}
 
 
-def llm_driven_chat(user_message: str, verbose: bool = True):
+def atomgpt_tooling(user_message: str, verbose: bool = True):
     """
-    LLM-Driven Tool Calling: The LLM decides which tools to call and when
+    AtomGPT-Driven Tool Calling: The LLM decides which tools to call and when
     
     This is closer to how MCP servers and function calling work:
-    - LLM sees available tools
-    - LLM decides which tool(s) to call
+    - AtomGPT sees available tools
+    - AtomGPT decides which tool(s) to call
     - We execute tools as requested
-    - LLM decides if more tools are needed or if it's done
-
-    Returns:
-        dict with:
-        - 'summary': Natural language response (str)
-        - 'plots': List of generated plot file paths (list)
-        - 'metrics': Performance metrics if available (dict)
+    - AtomGPT decides if more tools are needed or if it's done
     """
     
     if verbose:
@@ -170,15 +164,15 @@ def llm_driven_chat(user_message: str, verbose: bool = True):
                 return "I couldn't determine what action to take. Please try rephrasing your request."
             
             if verbose:
-                print(f"🔧 LLM decided to call: {tool_name}")
-                print(f"💡 Reasoning: {reasoning}")
-                print(f"📥 Arguments: {json.dumps(tool_args, indent=2)}")
+                print(f"LLM decided to call: {tool_name}")
+                print(f"Reasoning: {reasoning}")
+                print(f"Arguments: {json.dumps(tool_args, indent=2)}")
             
             # Execute the tool
             result = execute_tool(tool_name, tool_args)
             
             if verbose:
-                print(f"📤 Result: {result.get('status', 'unknown')}")
+                print(f"Result: {result.get('status', 'unknown')}")
                 if result.get('status') == 'success':
                     if 'metrics' in result:
                         print(f"   Metrics: {result['metrics']}")
@@ -230,8 +224,8 @@ def llm_driven_chat(user_message: str, verbose: bool = True):
 
 # Convenience wrapper
 def simple_chat(user_message: str, verbose: bool = True):
-    """Wrapper that uses LLM-driven approach"""
-    return llm_driven_chat(user_message, verbose)
+    """Wrapper that uses atomgpt's tooling approach"""
+    return atomgpt_tooling(user_message, verbose)
 
 
 # Main execution for testing
