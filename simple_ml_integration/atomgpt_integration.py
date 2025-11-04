@@ -76,7 +76,7 @@ def llm_driven_chat(user_message: str, verbose: bool = True):
     
     if verbose:
         print(f"\n{'='*70}")
-        print(f"📝 User Request: {user_message}")
+        print(f"User Request: {user_message}")
         print(f"{'='*70}\n")
     
     conversation_history = []
@@ -123,12 +123,12 @@ def llm_driven_chat(user_message: str, verbose: bool = True):
         
         # Ask the LLM what to do
         if verbose:
-            print("🤔 Asking AtomGPT what to do...")
+            print("Asking AtomGPT what to do...")
         
         llm_response = agapi_client.ask(prompt)
         
         if verbose:
-            print(f"💭 AtomGPT response:\n{llm_response}\n")
+            print(f"AtomGPT response:\n{llm_response}\n")
         
         # Parse the LLM's decision
         try:
