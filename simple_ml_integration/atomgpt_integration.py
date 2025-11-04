@@ -82,9 +82,9 @@ def atomgpt_tooling(user_message: str, verbose: bool = True):
             print(f"Iteration {iteration + 1}")
             print(f"{'─'*70}\n")
         
-        # Build the prompt for the LLM
+        # Build the initial prompt for AtomGPT
         if iteration == 0:
-            # First iteration - present the task
+            # First iteration - present the task & tools
             prompt = f"""{AVAILABLE_TOOLS}
             User request: "{user_message}"
 
@@ -115,31 +115,31 @@ def atomgpt_tooling(user_message: str, verbose: bool = True):
 
             What's next?"""
         
-        # Ask the LLM what to do
+        # Ask the AtomGPT what to do
         if verbose:
             print("Asking AtomGPT what to do...")
         
-        llm_response = agapi_client.ask(prompt)
+        atomgpt_response = agapi_client.ask(prompt)
         
         if verbose:
-            print(f"AtomGPT response:\n{llm_response}\n")
+            print(f"AtomGPT response:\n{atomgpt_response}\n")
         
-        # Parse the LLM's decision
+        # Parse the AtomGPTs decision
         try:
             # Extract JSON from response
-            json_match = re.search(r'\{.*\}', llm_response, re.DOTALL)
+            json_match = re.search(r'\{.*\}', atomgpt_response, re.DOTALL)
             if json_match:
                 decision = json.loads(json_match.group())
             else:
-                decision = json.loads(llm_response)
+                decision = json.loads(atomgpt_response)
             
-            # Check if LLM says we're done
+            # Check if AtomGPT says we're done
             if decision.get("done"):
                 if verbose:
-                    print(f"✅ LLM says we're done!\n")
+                    print(f"✅ AtomGPT says we're done!\n")
                     print(f"{'='*70}\n")
                 
-                # Get final summary from LLM
+                # Get final summary from AtomGPT
                 summary_prompt = f"""The user asked: "{user_message}"
                     Here's what was accomplished:
                     {chr(10).join(conversation_history)}
@@ -155,7 +155,7 @@ def atomgpt_tooling(user_message: str, verbose: bool = True):
                 summary = agapi_client.ask(summary_prompt)
                 return summary
             
-            # LLM wants to call a tool
+            # AtomGPT wants to call a tool
             tool_name = decision.get("tool")
             tool_args = decision.get("args", {})
             reasoning = decision.get("reasoning", "No reasoning provided")
@@ -164,7 +164,7 @@ def atomgpt_tooling(user_message: str, verbose: bool = True):
                 return "I couldn't determine what action to take. Please try rephrasing your request."
             
             if verbose:
-                print(f"LLM decided to call: {tool_name}")
+                print(f"AtomGPT decided to call: {tool_name}")
                 print(f"Reasoning: {reasoning}")
                 print(f"Arguments: {json.dumps(tool_args, indent=2)}")
             
@@ -186,13 +186,13 @@ def atomgpt_tooling(user_message: str, verbose: bool = True):
                 f"  Result: {json.dumps(result, default=str)}"
             )
             
-            # If tool failed, let LLM know and ask what to do
+            # If tool failed, let AtomGPT know and ask what to do
             if result.get('status') == 'error':
                 error_msg = result.get('message', 'Unknown error')
                 if verbose:
                     print(f"❌ Tool failed: {error_msg}\n")
                 
-                # Ask LLM how to handle the error
+                # Ask AtomGPT how to handle the error
                 error_prompt = f"""The tool {tool_name} failed with error: {error_msg}
                 Should we:
                 1. Try a different approach?
@@ -211,9 +211,9 @@ def atomgpt_tooling(user_message: str, verbose: bool = True):
         
         except (json.JSONDecodeError, AttributeError) as e:
             if verbose:
-                print(f"⚠️  Could not parse LLM response as JSON: {e}\n")
+                print(f"⚠️  Could not parse AtomGPT response as JSON: {e}\n")
             
-            # LLM didn't return valid JSON - ask it to try again
+            # AtomGPT didn't return valid JSON - ask it to try again
             if iteration < max_iterations - 1:
                 continue
             else:
