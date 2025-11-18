@@ -3,6 +3,7 @@ Comprehensive test suite for AtomGPT ML Integration
 Tests LLM-driven tool calling with various scenarios
 """
 import os
+import asyncio
 import pandas as pd
 from sklearn.datasets import make_regression, make_classification
 from dotenv import load_dotenv
@@ -72,16 +73,8 @@ print("\n" + "="*70)
 print("STEP 3: TESTING LLM-DRIVEN TOOL CALLING")
 print("="*70 + "\n")
 
-if not api_key:
-    print("⚠️  ATOMGPT_API_KEY not set")
-    print("\nTo test with AtomGPT:")
-    print("  1. Get your API key from AtomGPT")
-    print("  2. Create .env file: ATOMGPT_API_KEY=your-key")
-    print("  3. Or: export ATOMGPT_API_KEY='your-key'")
-    print("  4. Run: python test.py\n")
-else:
-    print(f"✅ API key loaded\n")
-    
+async def run_llm_tests():
+    """Run all LLM-driven tests"""
     from atomgpt_integration import simple_chat
     
     # Test 1: Basic training request
@@ -91,7 +84,7 @@ else:
     print("Query: 'Train a model on sales_data.csv to predict sales'\n")
     
     try:
-        response = simple_chat(
+        response = await simple_chat(
             "Train a model on sales_data.csv to predict sales",
             verbose=True
         )
@@ -108,7 +101,7 @@ else:
     print("Query: 'Build a classifier on customer_data.csv for segment'\n")
     
     try:
-        response = simple_chat(
+        response = await simple_chat(
             "Build a classifier on customer_data.csv for segment",
             verbose=True
         )
@@ -125,7 +118,7 @@ else:
     print("Query: 'I have sales data and want to predict sales'\n")
     
     try:
-        response = simple_chat(
+        response = await simple_chat(
             "I have sales_data.csv and want to predict the sales column",
             verbose=True
         )
@@ -142,7 +135,7 @@ else:
     print("Query: 'Train on nonexistent.csv to predict value'\n")
     
     try:
-        response = simple_chat(
+        response = await simple_chat(
             "Train on nonexistent.csv to predict value",
             verbose=True
         )
@@ -151,6 +144,19 @@ else:
         print(f"{'='*70}\n{response}\n")
     except Exception as e:
         print(f"Expected error occurred: {e}\n")
+
+
+# Run the async tests
+if not api_key:
+    print("⚠️  ATOMGPT_API_KEY not set")
+    print("\nTo test with AtomGPT:")
+    print("  1. Get your API key from AtomGPT")
+    print("  2. Create .env file: ATOMGPT_API_KEY=your-key")
+    print("  3. Or: export ATOMGPT_API_KEY='your-key'")
+    print("  4. Run: python test.py\n")
+else:
+    print(f"✅ API key loaded\n")
+    asyncio.run(run_llm_tests())
 
 # ============================================
 # FINAL SUMMARY

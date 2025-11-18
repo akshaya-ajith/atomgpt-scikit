@@ -1,24 +1,24 @@
-"""
-atomgpt_integration.py - AtomGPT integration with custom ML tools
-Using native Agapi client with simple keyword-based routing
-"""
-
+# Tool definitions (for the LLM to understand)
+import json
+import re
+import asyncio
 import os
 from dotenv import load_dotenv
-import re
-from agapi.client import Agapi
-from ml_backend import train_random_forest, evaluate_model, create_visualizations
-import json
+from openai import AsyncOpenAI
 
+# Load environment variables from .env file
 load_dotenv()
 
-# Initialize AtomGPT client
+# Initialize AsyncOpenAI client with AtomGPT endpoint
 api_key = os.getenv("ATOMGPT_API_KEY")
-agapi_client = Agapi(api_key=api_key)
+client = AsyncOpenAI(
+    base_url="https://atomgpt.org/api",
+    api_key=api_key
+)
 
-# No actual tooling for function calling os
+# Model to use - adjust as needed for AtomGPT
+MODEL = "openai/gpt-oss-20b" 
 
-# Tool definitions (for the LLM to understand)
 AVAILABLE_TOOLS = """
 You have access to these ML tools:
 
@@ -42,6 +42,19 @@ You have access to these ML tools:
 """
 
 
+async def ask_atomgpt(prompt: str) -> str:
+    """Send a prompt to AtomGPT and return the response text"""
+    response = await client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": "You are an ML assistant that helps users train and evaluate machine learning models. Always respond with valid JSON when asked to make tool decisions."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.1  # Lower temperature for more deterministic tool calling
+    )
+    return response.choices[0].message.content
+
+
 def execute_tool(tool_name: str, tool_args: dict):
     """Execute a tool and return results"""
     try:
@@ -57,7 +70,41 @@ def execute_tool(tool_name: str, tool_args: dict):
         return {"status": "error", "message": str(e)}
 
 
-def atomgpt_tooling(user_message: str, verbose: bool = True):
+# Placeholder implementations for the ML tools
+def train_random_forest(data_path: str, target_column: str, task_type: str, n_estimators: int = 100):
+    """Placeholder for training a Random Forest model"""
+    return {
+        "status": "success",
+        "message": f"Trained Random Forest with {n_estimators} estimators on {data_path}",
+        "model_type": "RandomForest",
+        "task_type": task_type,
+        "target": target_column
+    }
+
+
+def evaluate_model():
+    """Placeholder for evaluating the model"""
+    return {
+        "status": "success",
+        "metrics": {
+            "accuracy": 0.85,
+            "precision": 0.83,
+            "recall": 0.87,
+            "f1_score": 0.85
+        }
+    }
+
+
+def create_visualizations(output_dir: str = "./outputs"):
+    """Placeholder for creating visualizations"""
+    return {
+        "status": "success",
+        "message": f"Visualizations saved to {output_dir}",
+        "files": ["feature_importance.png", "confusion_matrix.png", "predictions.png"]
+    }
+
+
+async def atomgpt_tooling(user_message: str, verbose: bool = True):
     """
     AtomGPT-Driven Tool Calling: The LLM decides which tools to call and when
     
@@ -115,16 +162,16 @@ def atomgpt_tooling(user_message: str, verbose: bool = True):
 
             What's next?"""
         
-        # Ask the AtomGPT what to do
+        # Ask AtomGPT what to do
         if verbose:
             print("Asking AtomGPT what to do...")
         
-        atomgpt_response = agapi_client.ask(prompt)
+        atomgpt_response = await ask_atomgpt(prompt)
         
         if verbose:
             print(f"AtomGPT response:\n{atomgpt_response}\n")
         
-        # Parse the AtomGPTs decision
+        # Parse AtomGPT's decision
         try:
             # Extract JSON from response
             json_match = re.search(r'\{.*\}', atomgpt_response, re.DOTALL)
@@ -152,7 +199,7 @@ def atomgpt_tooling(user_message: str, verbose: bool = True):
 
                     Be concise and helpful."""
                 
-                summary = agapi_client.ask(summary_prompt)
+                summary = await ask_atomgpt(summary_prompt)
                 return summary
             
             # AtomGPT wants to call a tool
@@ -200,7 +247,7 @@ def atomgpt_tooling(user_message: str, verbose: bool = True):
 
                 Respond with: {{"done": true, "summary": "error explanation"}} if we should stop."""
                                 
-                error_response = agapi_client.ask(error_prompt)
+                error_response = await ask_atomgpt(error_prompt)
                 
                 try:
                     error_decision = json.loads(re.search(r'\{.*\}', error_response, re.DOTALL).group())
@@ -222,20 +269,21 @@ def atomgpt_tooling(user_message: str, verbose: bool = True):
     # Max iterations reached
     return "I completed some actions but may not have finished everything. Please check the results."
 
+
 # Convenience wrapper
-def simple_chat(user_message: str, verbose: bool = True):
-    """Wrapper that uses atomgpt's tooling approach"""
-    return atomgpt_tooling(user_message, verbose)
+async def simple_chat(user_message: str, verbose: bool = True):
+    """Wrapper that uses AtomGPT's tooling approach"""
+    return await atomgpt_tooling(user_message, verbose)
 
 
 # Main execution for testing
-if __name__ == "__main__":
+async def main():
     print("\n" + "🟦"*35)
     print("ATOMGPT ML ASSISTANT")
     print("🟦"*35 + "\n")
     
     # Test with simple chat
-    response = simple_chat(
+    response = await simple_chat(
         "Train a random forest on sales_data.csv predicting sales, then evaluate it and create visualizations"
     )
     
@@ -244,3 +292,7 @@ if __name__ == "__main__":
     print(f"{'='*70}\n")
     print(response)
     print(f"\n{'='*70}\n")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
